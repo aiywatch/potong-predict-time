@@ -1,7 +1,7 @@
 import pandas as pd
 import numpy as np
 
-import cleaning_data
+#import cleaning_data
 
 
 def get_X_y(made_data):
@@ -20,6 +20,7 @@ def get_modellers(path):
     
 #    made_data = cleaning_data.clean_data(path)
     made_data = pd.read_csv("data/cleaned_potong1.csv.tar.gz")
+    made_data = made_data.dropna()
     
     X, y = get_X_y(made_data)
 
@@ -50,22 +51,22 @@ def get_modellers(path):
     regressor.add(Dense(output_dim=30, init='normal', activation='relu', input_dim=11))
     regressor.add(Dense(output_dim=30, init='normal', activation='relu'))
     regressor.add(Dense(output_dim=30, init='normal', activation='relu'))
-    regressor.add(Dense(output_dim=30, init='normal', activation='relu'))
+#    regressor.add(Dense(output_dim=30, init='normal', activation='relu'))
 #    regressor.add(Dense(output_dim=50, init='normal', activation='relu'))
 #    regressor.add(Dense(output_dim=50, init='normal', activation='relu'))
 #    regressor.add(Dense(output_dim=50, init='normal', activation='relu'))
     regressor.add(Dense(output_dim=1, init='normal'))
     
     regressor.compile(optimizer='adam', loss='mean_squared_error')
-    regressor.fit(X_train, y_train, batch_size=32, nb_epoch=300)
+    regressor.fit(X_train, y_train, batch_size=32, nb_epoch=150)
     
 #    y_pred = regressor.predict(X_test)
 #    score = regressor.evaluate(X_test, y_test)
 
-    return [regressor, labelencoder, onehotencoder, sc_X]
+    return [regressor, labelencoder, onehotencoder, sc_X, X_test, y_test]
 
 path = "data/pothong_1.csv"
-[regressor, labelencoder, onehotencoder, sc_X] = get_modellers(path)
+[regressor, labelencoder, onehotencoder, sc_X, X_test, y_test] = get_modellers(path)
 
 
 
@@ -86,8 +87,8 @@ path = "data/pothong_1.csv"
 #score = regressor.score(X_test, y_test)
 
 
-#from sklearn.externals import joblib
-#joblib.dump([X, y], 'saved-model/Xy.pkl')
+from sklearn.externals import joblib
+joblib.dump([X_test, y_test], 'saved-model/Xy.pkl')
 
 
 def save_model(modellers):
@@ -108,7 +109,7 @@ def save_model(modellers):
 
 
 
-#save_model([regressor, labelencoder, onehotencoder, sc_X])
+save_model([regressor, labelencoder, onehotencoder, sc_X])
 
 
 #from keras.models import model_from_json
