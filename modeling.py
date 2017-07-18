@@ -3,6 +3,8 @@ import numpy as np
 
 #import cleaning_data
 
+SAVED_MODEL_PATH = 'saved-model/'
+
 
 def get_X_y(made_data):
 
@@ -16,10 +18,11 @@ def get_X_y(made_data):
     return X, y
 
 
-def get_modellers(path):
+def get_modellers(bus_line):
     
+    DATA_PATH = "data/cleaned_potong{}.csv.gz".format(bus_line)
 #    made_data = cleaning_data.clean_data(path)
-    made_data = pd.read_csv("data/cleaned_potong1.csv.tar.gz")
+    made_data = pd.read_csv(DATA_PATH)
     made_data = made_data.dropna()
     
     X, y = get_X_y(made_data)
@@ -39,77 +42,59 @@ def get_modellers(path):
     X_train = sc_X.fit_transform(X_train)
     X_test = sc_X.transform(X_test)
     
-    #sc_y = StandardScaler()
-    #y_train = sc_y.fit_transform(y_train)
-    
     #import keras
     from keras.models import Sequential
     from keras.layers import Dense
     
+    feature_num = X.shape[1]
+    
     regressor = Sequential()
     
-    regressor.add(Dense(output_dim=30, init='normal', activation='relu', input_dim=11))
+    regressor.add(Dense(output_dim=30, init='normal', activation='relu', input_dim=feature_num))
     regressor.add(Dense(output_dim=30, init='normal', activation='relu'))
     regressor.add(Dense(output_dim=30, init='normal', activation='relu'))
-#    regressor.add(Dense(output_dim=30, init='normal', activation='relu'))
-#    regressor.add(Dense(output_dim=50, init='normal', activation='relu'))
-#    regressor.add(Dense(output_dim=50, init='normal', activation='relu'))
-#    regressor.add(Dense(output_dim=50, init='normal', activation='relu'))
     regressor.add(Dense(output_dim=1, init='normal'))
     
     regressor.compile(optimizer='adam', loss='mean_squared_error')
     regressor.fit(X_train, y_train, batch_size=32, nb_epoch=150)
+    
     
 #    y_pred = regressor.predict(X_test)
 #    score = regressor.evaluate(X_test, y_test)
 
     return [regressor, labelencoder, onehotencoder, sc_X, X_test, y_test]
 
-path = "data/pothong_1.csv"
-[regressor, labelencoder, onehotencoder, sc_X, X_test, y_test] = get_modellers(path)
 
 
 
-
-#y_test = np.array(y_test)
-#y_pred = np.array(y_pred)
-#
-#y_diff = y_test - y_pred
-#y_check = np.append(y_diff, y_pred, axis=1)
-
-
-
-#from sklearn.linear_model import Ridge
-#regressor = Ridge()
-#regressor.fit(X_train, y_train)
-#
-#y_pred = regressor.predict(X_test)
-#score = regressor.score(X_test, y_test)
-
-
-from sklearn.externals import joblib
-joblib.dump([X_test, y_test], 'saved-model/Xy.pkl')
-
-
-def save_model(modellers):
+def save_model(modellers, bus_line):
     from sklearn.externals import joblib
     
     [regressor, labelencoder, onehotencoder, sc] = modellers
     
     # serialize model to JSON
     model_json = regressor.to_json()
-    with open("saved-model/model.json", "w") as json_file:
+    with open("{}{}/model.json".format(SAVED_MODEL_PATH, bus_line), "w") as json_file:
         json_file.write(model_json)
         
     # serialize weights to HDF5
-    regressor.save_weights("saved-model/model.h5")
+    regressor.save_weights("{}{}/model.h5".format(SAVED_MODEL_PATH, bus_line))
     print("Saved model to disk")
     
-    joblib.dump([labelencoder, onehotencoder, sc], 'saved-model/encoders.pkl')
+    joblib.dump([labelencoder, onehotencoder, sc], "{}{}/encoders.pkl".format(SAVED_MODEL_PATH, bus_line))
+    joblib.dump([X_test, y_test], "{}{}/Xy.pkl".format(SAVED_MODEL_PATH, bus_line))
+
+
+BUS_LINE = '3'
+
+[regressor, labelencoder, onehotencoder, sc_X, X_test, y_test] = get_modellers(BUS_LINE)
+save_model([regressor, labelencoder, onehotencoder, sc_X], BUS_LINE)
 
 
 
-save_model([regressor, labelencoder, onehotencoder, sc_X])
+
+
+
 
 
 #from keras.models import model_from_json

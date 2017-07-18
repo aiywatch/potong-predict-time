@@ -12,21 +12,18 @@ def clean_data(path):
             return dt['linear_outbound'] if (dt['status'] == 'outbound') else dt['linear_inbound']
         
         data['linear_ref'] = data.apply(get_linear_ref, axis=1)
-#        def is_next_trip(prev, curr):
-#            if prev[']
         
         status = []
         trip_id = []
         count_trip = 0
         last_status = ""
-#        last_linear_ref = 0
+        
         for i, point in data.iterrows():
             lower = i-5 if i-5>=0 else 0
             upper = i+6 if i+6<=data.shape[0] else data.shape[0]
-#            print(data.iloc[lower:upper, :]['status'])
+            
             status += [data.iloc[lower:upper, :]['status'].value_counts().idxmax()]
             
-#            linref_diff = dt['linear_outbound'] if (dt['status'] == 'outbound') else dt['linear_inbound']
             
             prev_index = i-1 if i-1 >= 0 else 0
             if((status[-1] != last_status)  | 
@@ -36,8 +33,6 @@ def clean_data(path):
                 count_trip += 1
             trip_id += [count_trip]
             
-#            if(point['status'] == "inbound"):
-#                if(point['linear_inbound'] - data.loc[i-1])
         
         data['status'] = status
         data['trip_id'] = trip_id
@@ -66,6 +61,9 @@ def clean_data(path):
         temp_data['next_index'] = temp_data['index'].shift(-n)
         
         temp_data = temp_data[temp_data['trip_id']==temp_data['next_trip_id']]
+        
+        if temp_data.shape[0] == 0:
+            return None
         
         temp_data['time_to_next'] = temp_data['next_time'] - temp_data['gps_timestamp']
         temp_data = temp_data[temp_data['status'] == temp_data['next_status']]
@@ -110,7 +108,8 @@ def clean_data(path):
     for t in range(3, 100):
         print("combining every", t, "point")
         temp = include_next_point(data, t)
-        made_data = pd.concat([made_data, temp])
+        if temp is not None:
+            made_data = pd.concat([made_data, temp])
     
     made_data = made_data[made_data['distance_to_next'] >= 0]
     made_data['time_to_next'] = made_data['time_to_next'].dt.seconds
@@ -118,13 +117,18 @@ def clean_data(path):
     return made_data, data
 
 
-cleaned_data, data = clean_data("data/pothong_2.csv.gz")
+BUS_LINE = '3'
+
+cleaned_data, data = clean_data("data/pothong_{}.csv.gz".format(BUS_LINE))
 print("data cleaned!")
-cleaned_data.to_csv("data/cleaned_potong2.csv.gz", compression='gzip', index=False)
+cleaned_data.to_csv("data/cleaned_potong{}.csv.gz".format(BUS_LINE), compression='gzip', index=False)
 print("saved")
 
 
-#raw_data = pd.read_csv("data/pothong_1.csv.gz")
+
+
+
+#raw_data = pd.read_csv("data/pothong_2a.csv.gz")
 #print("data loaded")
 #data = raw_data.copy()
 #
