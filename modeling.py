@@ -85,32 +85,22 @@ def save_model(modellers, bus_line):
     joblib.dump([X_test, y_test], "{}{}/Xy.pkl".format(SAVED_MODEL_PATH, bus_line))
 
 
-BUS_LINE = '3'
-
-[regressor, labelencoder, onehotencoder, sc_X, X_test, y_test] = get_modellers(BUS_LINE)
-save_model([regressor, labelencoder, onehotencoder, sc_X], BUS_LINE)
-
-
-
-
-
-
-
-
-#from keras.models import model_from_json
+#BUS_LINE = '3'
 #
-## load json and create model
-#json_file = open('saved-model/model.json', 'r')
-#loaded_model_json = json_file.read()
-#json_file.close()
-#loaded_model = model_from_json(loaded_model_json)
-## load weights into new model
-#loaded_model.load_weights("model.h5")
-#print("Loaded model from disk")
-#
-#
-#
-#yy_pred = loaded_model.predict(X_test)
+#[regressor, labelencoder, onehotencoder, sc_X, X_test, y_test] = get_modellers(BUS_LINE)
+#save_model([regressor, labelencoder, onehotencoder, sc_X], BUS_LINE)
+
+
+def run(bus_line):
+    [regressor, labelencoder, onehotencoder, sc_X, X_test, y_test] = get_modellers(bus_line)
+    save_model([regressor, labelencoder, onehotencoder, sc_X], bus_line)
+
+
+
+run('1')
+run('2')
+run('2a')
+run('3')
 
 
 

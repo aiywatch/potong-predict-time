@@ -117,26 +117,18 @@ def clean_data(path):
     return made_data, data
 
 
-BUS_LINE = '3'
-
-cleaned_data, data = clean_data("data/pothong_{}.csv.gz".format(BUS_LINE))
-print("data cleaned!")
-cleaned_data.to_csv("data/cleaned_potong{}.csv.gz".format(BUS_LINE), compression='gzip', index=False)
-print("saved")
-
+def run(bus_line):
+    cleaned_data, data = clean_data("data/pothong_{}.csv.gz".format(bus_line))
+    print("data cleaned!")
+    cleaned_data.to_csv("data/cleaned_potong{}.csv.gz".format(bus_line), compression='gzip', index=False)
+    print("saved")
 
 
 
+run('1')
+run('2')
+run('2a')
+run('3')
 
-#raw_data = pd.read_csv("data/pothong_2a.csv.gz")
-#print("data loaded")
-#data = raw_data.copy()
-#
-#
-#data = data[["gps_timestamp", "speed", "vehicle_id", "linear_inbound", 
-#         "linear_outbound", "longitude", "latitude", "bus_line", "status"]]
-#
-#data = data[(data['status'] == 'inbound') | (data['status'] == 'outbound')]
-#
-#data = data.iloc[::150, :]
+
 
