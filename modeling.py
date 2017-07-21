@@ -7,6 +7,7 @@ SAVED_MODEL_PATH = 'saved-model/'
 
 
 def get_X_y(made_data):
+    """ Get X and y for Deep learning Model """
 
     X_cols = ['day_of_week', 'status', 'hour', 'distance_to_next',
             'speed', 'linear_ref']
@@ -19,14 +20,18 @@ def get_X_y(made_data):
 
 
 def get_modellers(bus_line):
+    """ Train Keras Deep Learning Model """
     
+    ## Import cleaned data, the result from cleaning_data.py
     DATA_PATH = "data/cleaned_potong{}.csv.gz".format(bus_line)
 #    made_data = cleaning_data.clean_data(path)
     made_data = pd.read_csv(DATA_PATH)
     made_data = made_data.dropna()
     
+    ## Get X and y
     X, y = get_X_y(made_data)
-
+    
+    ## Encode data
     from sklearn.preprocessing import OneHotEncoder, LabelEncoder, StandardScaler
     labelencoder = LabelEncoder()
     X[:, 1] = labelencoder.fit_transform(X[:, 1])
@@ -35,9 +40,11 @@ def get_modellers(bus_line):
     X = onehotencoder.fit_transform(X).toarray()
     X = X[:, 1:]
     
+    ## Split Train/ Test
     from sklearn.model_selection import train_test_split
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1)
     
+    ## Scale Data
     sc_X = StandardScaler()
     X_train = sc_X.fit_transform(X_train)
     X_test = sc_X.transform(X_test)
@@ -67,10 +74,16 @@ def get_modellers(bus_line):
 
 
 
-def save_model(modellers, bus_line):
+def save_model(modellers, xy, bus_line):
+    """ Save models to disk
+        1. regressor - Deep learning structure to model.json & weight to model.h5
+        2. encoders to encoders.pkl
+        3. X_test, y_test to Xy.pkl for testing the model"""
+        
     from sklearn.externals import joblib
     
     [regressor, labelencoder, onehotencoder, sc] = modellers
+    [X_test, y_test] = xy
     
     # serialize model to JSON
     model_json = regressor.to_json()
@@ -93,7 +106,7 @@ def save_model(modellers, bus_line):
 
 def run(bus_line):
     [regressor, labelencoder, onehotencoder, sc_X, X_test, y_test] = get_modellers(bus_line)
-    save_model([regressor, labelencoder, onehotencoder, sc_X], bus_line)
+    save_model([regressor, labelencoder, onehotencoder, sc_X], [X_test, y_test], bus_line)
 
 
 

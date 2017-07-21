@@ -1,9 +1,10 @@
 from sklearn.externals import joblib
 import pandas as pd
 import datetime
+import math
 import requests
 from keras.models import model_from_json
-#from geopy.distance import vincenty
+from geopy.distance import vincenty
 
 
 BUS_LINES = ['1', '2', '2a', '3']
@@ -30,14 +31,14 @@ def import_model(bus_line):
     return [regressor, labelencoder, onehotencoder, sc]
 
 
-#def get_lastest_gps(bus_vehicle_id):
-#    data = requests.get('https://api.traffy.xyz/vehicle/?vehicle_id='+str(bus_vehicle_id)).json()
-#    bus = data['results']
-#    if(bus):
-#        return bus[0]
-#    return None
+def get_lastest_gps(bus_vehicle_id):
+    data = requests.get('https://api.traffy.xyz/vehicle/?vehicle_id='+str(bus_vehicle_id)).json()
+    bus = data['results']
+    if(bus):
+        return bus[0]
+    return None
 
-def extract_bus_info(bus):
+def get_bus_info(bus):
     bus_data = pd.Series()
     bus_data['vehicle_id'] = bus['vehicle_id']
     bus_data['timestamp'] = bus['info']['gps_timestamp']
@@ -48,7 +49,8 @@ def extract_bus_info(bus):
     bus_data['direction'] = bus['info']['direction']
     bus_data['status'] = bus['status']
     [bus_data['lon'], bus_data['lat']] = bus['info']['coords']
-
+#    bus_data['route_length_in_meter']
+#    bus_data['distance_from_route_in_meter']
     return bus_data
 
 def clean_data(data_point, usr_linear_ref):
@@ -70,6 +72,7 @@ def encode_data(data_point, labelencoder, onehotencoder, sc):
     new_data_point = data_point.copy()
     
     new_data_point[1] = labelencoder.transform([new_data_point[1]])[0]
+#    new_data_point[0] = labelencoder.transform([new_data_point[0]])[0]
     
     new_data_point = onehotencoder.transform([new_data_point]).toarray()
     new_data_point = new_data_point[0, 1:]
@@ -78,6 +81,7 @@ def encode_data(data_point, labelencoder, onehotencoder, sc):
     return new_data_point
 
 #def predict_time(bus_line, bus_vehicle_id, usr_lat, usr_lon, usr_dir):
+##    print('predicting')
 #    bus_line = str(bus_line)
 #    if(bus_line not in BUS_LINES):
 #        return 'This bus line is not available!'
@@ -128,10 +132,7 @@ def encode_data(data_point, labelencoder, onehotencoder, sc):
 #    return output
 
 
-def predict_time(bus_line, bus_data, usr_linear_ref):
-    """ 1. Import Deep learning Model from Disk
-        2. Clean/Filter only required bus data and Encode the data
-        3. Predict arrival time """
+def predict_time(bus_data, usr_linear_ref):
     
     time_now = pd.to_datetime(datetime.datetime.utcnow())
     
@@ -141,8 +142,7 @@ def predict_time(bus_line, bus_data, usr_linear_ref):
     
     predicted_time = regressor.predict([encoded_bus_data])
     
-    output = {'predicted_arrival_time': predicted_time[0][0],
-              'server time': time_now,
+    output = {'predicted_arrival_time': float(predicted_time[0][0]),
                     'last_point_data': {
                         'user_linear_ref': usr_linear_ref,
                         'last_timestamp': bus_data['timestamp'],
@@ -157,37 +157,29 @@ def predict_time(bus_line, bus_data, usr_linear_ref):
 
 
 def request_prediction(bus_line, usr_lat, usr_lon, usr_dir):
-    """ 1. Preprocessing user data(i.e. user's latitude/longitude and direction
-        2. Getting User's linear ref
-        3. Querying a matched bus(same bus line, direction, and havn't passed) from API
-        4. Calling Machine learning function (predict_time)"""
-        
-    bus_line = str(bus_line)
-    if(bus_line not in BUS_LINES):
-        return 'This bus line is not available!'
     
-    ## Getting Buses data in the requested bus line
     data = requests.get('https://api.traffy.xyz/vehicle/?line=potong-{}'.format(
             bus_line)).json()
     buses = data['results']
     
     if not buses:
-        return 'No bus in this line is available!'
+        return 'This bus line is not available!'
     
-    ## Extract raw bus JSON/dict data to Pandas DataFrame
     bus_df = pd.DataFrame(columns=['vehicle_id', 'timestamp', 'name', 'linear_ref', 
                               'speed', 'direction', 'lat', 'lon', 'status'])
+    
     for bus in buses:
-        bus_info = extract_bus_info(bus)
+        bus_info = get_bus_info(bus)
         bus_df = bus_df.append(bus_info, ignore_index=True)
     
-    ## Getting user's linear ref
+
     route_id = ROUTE.loc[usr_dir, bus_line]
     data = requests.get('https://api.traffy.xyz/v0/route/{}/linear_ref/?coords={},{}'.format(
             route_id, usr_lon, usr_lat)).json()
     usr_linear_ref = data['location']['linear_ref']
     
-    ## Filtering buses
+#    print('usr_linref', usr_linear_ref)
+    
     running_buses = bus_df[(bus_df['status'] == usr_dir) & 
                            (bus_df['linear_ref'] < usr_linear_ref)
                           ].sort_values('linear_ref', ascending=False)
@@ -198,17 +190,17 @@ def request_prediction(bus_line, usr_lat, usr_lon, usr_dir):
     
     closest_bus = running_buses.iloc[0, :]
     
-    return predict_time(bus_line, closest_bus, usr_linear_ref)
+    return predict_time(closest_bus, usr_linear_ref)
 
 
-#bus_line = '1'
-##usr_lon = 98.3663
-##usr_lat = 7.89635
-#usr_lon = 98.401550
-#usr_lat = 7.862933
-#
-#usr_dir = 'out'
-#request_prediction(bus_line, usr_lat, usr_lon, usr_dir)
+bus_line = '1'
+#usr_lon = 98.3663
+#usr_lat = 7.89635
+usr_lon = 98.401550
+usr_lat = 7.862933
+
+usr_dir = 'out'
+request_prediction(bus_line, usr_lat, usr_lon, usr_dir)
 
 
 

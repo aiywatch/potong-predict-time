@@ -5,7 +5,7 @@ from flask import Flask, request, jsonify
 
 app = Flask(__name__)
 
-@app.route('/predict_potong_arrival_time/<bus_line>/<usr_lat>/<usr_lon>/<usr_dir>', methods=['GET'])
+@app.route('/predict_potong_arrival_time/<bus_line>/<bus_vehicle_id>/<usr_lat>/<usr_lon>/<usr_dir>', methods=['GET'])
 def predict_arrival_time(bus_line, usr_lat, usr_lon, usr_dir):
     return jsonify(request_prediction(bus_line, usr_lat, usr_lon, usr_dir))
 
